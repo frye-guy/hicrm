@@ -23,7 +23,7 @@
   {{-- Alpine for theme + modals --}}
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-  {{-- TailwindCDN (you can swap to your build later) --}}
+  {{-- TailwindCDN --}}
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -44,7 +44,7 @@
       --text-muted:#a3a3a3;
       --brand:#38bdf8;
       --brand-600:#0891b2;
-      --ring: #22d3ee;
+      --ring:#22d3ee;
       --success:#22c55e;
       --danger:#ef4444;
       --warning:#f59e0b;
@@ -79,11 +79,11 @@
     <div class="max-w-7xl mx-auto px-4">
       <div class="flex items-center justify-between h-14">
         <div class="flex items-center gap-2">
-          <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
-          <a href="/contacts" class="btn btn-ghost">Contacts</a>
-          <a href="/queues" class="btn btn-ghost">Queues</a>
-          <a href="/appointments" class="btn btn-ghost">Appointments</a>
-          <a href="/reports/calls" class="btn btn-ghost">Reports</a>
+          <a href="{{ route('dashboard') }}" class="btn btn-ghost">Dashboard</a>
+          <a href="{{ route('contacts.index') }}" class="btn btn-ghost">Contacts</a>
+          <a href="{{ route('queues.index') }}" class="btn btn-ghost">Queues</a>
+          <a href="{{ route('appointments.index') }}" class="btn btn-ghost">Appointments</a>
+          <a href="{{ route('reports.calls') }}" class="btn btn-ghost">Reports</a>
           <a href="{{ route('lead-sources.index') }}" class="btn btn-ghost">Lead Sources</a>
           <a href="{{ route('lead-source-types.index') }}" class="btn btn-ghost">Lead Source Types</a>
         </div>
@@ -94,6 +94,14 @@
             @csrf
             <button type="submit" class="btn btn-ghost">Logout</button>
           </form>
+<script>
+  document.addEventListener('open-theme-panel', () => {
+    const el = document.querySelector('[x-data="theme()"]');
+    if (el && el.__x) {
+      el.__x.$data.panelOpen = true;
+    }
+  });
+</script>
         </div>
       </div>
     </div>
@@ -105,11 +113,12 @@
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ $contact->first_name ?? '' }} {{ $contact->last_name ?? '' }}</h1>
-        <p class="muted">ID: <span class="font-mono">{{ $contact->id }}</span> &nbsp;  &nbsp; {{-- wherever you display the read-only source label --}}
-<span class="text-gray-400">Source:</span>
-<span class="text-gray-100 font-semibold">
-    {{ optional($contact->leadSource)->name ?? '' }}
-</span></p>
+        <p class="muted">
+          ID: <span class="font-mono">{{ $contact->id }}</span>
+          &nbsp; &nbsp;
+          <span class="text-gray-400">Source:</span>
+          <span class="text-gray-100 font-semibold">{{ optional($contact->leadSource)->name ?? '' }}</span>
+        </p>
       </div>
       @isset($contact->needs_reset)
         <span class="badge" :style="{background: colors.warning, color:'#111827'}">
@@ -122,37 +131,33 @@
     <form method="POST" action="{{ route('contacts.update',$contact) }}" class="card border border-slate-700/40 p-5 rounded-xl mb-8">
       @csrf @method('PUT')
 
-      {{-- row 1: phones / source / id / reset --}}
+      {{-- row 1 --}}
       <div class="grid-col">
         <div class="col-span-3 field">
           <label>Phone *</label>
           <input name="phone" value="{{ old('phone',$contact->phone ?? '') }}" class="ring-brand">
         </div>
 
+        {{-- Dispo button opens modal --}}
         <div class="col-span-2 field">
           <label>Dispo</label>
-          <input name="dispo" value="{{ old('dispo',$contact->dispo ?? '') }}">
+          <button type="button" class="btn btn-brand w-full" @click="noteOpen = true">
+            Add / Update Disposition
+          </button>
         </div>
 
         <div class="field">
-<label class="block text-sm font-medium">Source</label>
-<select
-    name="lead_source_id"
-    class="form-select w-full"
->
-    <option value="">Select</option>
-    @foreach($leadSources as $source)
-        <option
-            value="{{ $source->id }}"
-            @selected(old('lead_source_id', $contact->lead_source_id) == $source->id)
-        >
-            {{ $source->name }}
-        </option>
-    @endforeach
-</select>
-@error('lead_source_id')
-    <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-@enderror</div>
+          <label class="block text-sm font-medium">Source</label>
+          <select name="lead_source_id" class="form-select w-full">
+            <option value="">Select</option>
+            @foreach($leadSources as $source)
+              <option value="{{ $source->id }}" @selected(old('lead_source_id',$contact->lead_source_id) == $source->id)>
+                {{ $source->name }}
+              </option>
+            @endforeach
+          </select>
+          @error('lead_source_id') <p class="mt-1 text-sm text-red-500">{{ $message }}</p> @enderror
+        </div>
 
         <div class="col-span-2 field">
           <label>Record ID</label>
@@ -168,7 +173,7 @@
         </div>
       </div>
 
-      {{-- row 2: names --}}
+      {{-- row 2 --}}
       <div class="grid-col mt-4">
         <div class="col-span-3 field">
           <label>First Name</label>
@@ -188,7 +193,7 @@
         </div>
       </div>
 
-      {{-- row 3: address --}}
+      {{-- row 3 --}}
       <div class="grid-col mt-4">
         <div class="col-span-6 field">
           <label>Address</label>
@@ -213,7 +218,7 @@
         </div>
       </div>
 
-      {{-- row 4: misc --}}
+      {{-- row 4 --}}
       <div class="grid-col mt-4">
         <div class="col-span-2 field">
           <label>Mr Works</label>
@@ -279,111 +284,6 @@
         </div>
       </div>
 
-
-@extends('layouts.app')
-
-@section('content')
-<div class="max-w-6xl mx-auto p-6">
-  {{-- Header --}}
-  <div class="flex items-start justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-semibold">
-        Contact: {{ $contact->first_name }} {{ $contact->last_name }}
-      </h1>
-      <p class="text-sm text-gray-500">
-        {{ $contact->city ?? '' }} {{ $contact->state ? ', '.$contact->state : '' }}
-        @if($contact->phone) • {{ $contact->phone }} @endif
-        @if($contact->email) • {{ $contact->email }} @endif
-      </p>
-    </div>
-    @if($settings && $settings->ui_primary_color)
-      <span class="inline-flex items-center px-3 py-1 rounded-full text-white text-xs font-medium"
-            style="background: {{ $settings->ui_primary_color }};">
-        CRM
-      </span>
-    @endif
-  </div>
-
-  {{-- Add Note --}}
-  <div class="bg-white border rounded-lg p-4 mb-8">
-    <form method="POST" action="{{ route('contacts.notes.store', $contact) }}" class="space-y-4">
-      @csrf
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium mb-1">Note</label>
-          <textarea name="body" rows="3" class="w-full border rounded p-2" placeholder="Type a note..."></textarea>
-          @error('body') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1">Disposition</label>
-          <select name="disposition_id" class="w-full border rounded p-2">
-            <option value="">— optional —</option>
-            @foreach($dispositions as $d)
-              <option value="{{ $d->id }}">{{ $d->name }}</option>
-            @endforeach
-          </select>
-          @error('disposition_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-
-          <label class="block text-sm font-medium mt-4 mb-1">Follow-up</label>
-          <input type="datetime-local" name="follow_up_at" class="w-full border rounded p-2" />
-          @error('follow_up_at') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-
-          <button type="submit"
-                  class="mt-4 px-4 py-2 rounded text-white"
-                  style="background: {{ $settings->ui_secondary_color ?? '#111827' }}">
-            Add Note
-          </button>
-        </div>
-      </div>
-    </form>
-  </div>
-
-  {{-- Notes Timeline --}}
-  <div>
-    <h2 class="text-lg font-semibold mb-3">Notes & Activity</h2>
-    <div class="space-y-3">
-      @forelse($contact->notes as $note)
-        <div class="bg-white border rounded-lg p-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              @if($note->disposition)
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-white"
-                      style="background: {{ $note->disposition->row_color ?? '#6B7280' }}">
-                  {{ $note->disposition->name }}
-                </span>
-              @endif
-              @if($note->follow_up_at)
-                <span class="text-xs text-amber-700 font-medium">
-                  Follow-up: {{ $note->follow_up_at->format('M j, Y g:ia') }}
-                </span>
-              @endif
-            </div>
-            <div class="text-xs text-gray-500">
-              by {{ $note->user->name ?? 'System' }} • {{ $note->created_at->diffForHumans() }}
-            </div>
-          </div>
-
-          @if($note->body)
-            <p class="mt-2 text-sm whitespace-pre-line">{{ $note->body }}</p>
-          @endif
-
-          <form method="POST" action="{{ route('contacts.notes.destroy', [$contact, $note]) }}"
-                onsubmit="return confirm('Delete this note?')" class="mt-2">
-            @csrf @method('DELETE')
-            <button class="text-xs text-red-600 hover:underline">Delete</button>
-          </form>
-        </div>
-      @empty
-        <p class="text-sm text-gray-500">No notes yet.</p>
-      @endforelse
-    </div>
-  </div>
-</div>
-@endsection
-
-
-
       <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-brand">Save</button>
         @if (session('status'))
@@ -405,15 +305,15 @@
       <div class="overflow-x-auto mt-4">
         <table class="table w-full text-sm">
           <thead>
-            <tr>
-              <th>Action</th>
-              <th>Appt Date</th>
-              <th>Set By</th>
-              <th>Set With</th>
-              <th>Date Set</th>
-              <th>Interested In</th>
-              <th>Result</th>
-            </tr>
+          <tr>
+            <th>Action</th>
+            <th>Appt Date</th>
+            <th>Set By</th>
+            <th>Set With</th>
+            <th>Date Set</th>
+            <th>Interested In</th>
+            <th>Result</th>
+          </tr>
           </thead>
           <tbody>
           @forelse(($appointments ?? []) as $appt)
@@ -450,50 +350,248 @@
         </table>
       </div>
     </section>
+
+    {{-- Notes & Activity (below appointments) --}}
+    <section class="card border border-slate-700/40 p-5 rounded-xl mt-8">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Notes & Activity</h2>
+        <button class="btn btn-brand" @click="noteOpen=true">Add Note</button>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        @forelse($contact->notes as $note)
+          <div class="p-3 border border-slate-700/40 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                @if($note->disposition)
+                  <span class="badge"
+                        style="background: {{ $note->disposition->row_color ?? '#334155' }}; color:#fff">
+                    {{ $note->disposition->label ?? $note->disposition->name ?? 'Disposition' }}
+                  </span>
+                @endif
+                @if($note->follow_up_at)
+                  <span class="text-xs text-amber-300">
+                    Follow-up: {{ $note->follow_up_at->format('M j, Y g:i a') }}
+                  </span>
+                @endif
+              </div>
+              <div class="text-xs muted">
+                by {{ $note->user->name ?? 'System' }} • {{ $note->created_at->diffForHumans() }}
+              </div>
+            </div>
+            @if($note->body)
+              <div class="text-sm mt-2 whitespace-pre-line">{{ $note->body }}</div>
+            @endif
+          </div>
+        @empty
+          <p class="text-sm muted">No notes yet.</p>
+        @endforelse
+      </div>
+    </section>
   </main>
 
-  {{-- New Appointment Modal --}}
-  <div x-show="newAppt" x-transition.opacity class="fixed inset-0 z-50 bg-black/60 p-4"
-       @keydown.escape.window="newAppt=false">
-    <div class="card max-w-2xl mx-auto rounded-xl p-6 border border-slate-700/40">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">New Appointment</h3>
-        <button class="btn btn-ghost" @click="newAppt=false">Close</button>
-      </div>
-      <form method="POST" action="{{ route('appointments.store') }}">
-        @csrf
-        <input type="hidden" name="contact_id" value="{{ $contact->id }}">
-
-        <div class="grid grid-cols-2 gap-4">
-          <div class="field">
-            <label>Scheduled For</label>
-            <input type="datetime-local" name="scheduled_for" class="ring-brand">
-          </div>
-          <div class="field">
-            <label>Interested In</label>
-            <input name="interested_in">
-          </div>
-          <div class="field">
-            <label>Set With</label>
-            <input name="set_with_name" value="{{ old('set_with_name') }}">
-          </div>
-          <div class="field">
-            <label>Result</label>
-            <input name="result">
-          </div>
-          <div class="col-span-2 field">
-            <label>Notes</label>
-            <textarea name="notes" rows="5"></textarea>
-          </div>
-        </div>
-
-        <div class="mt-5 flex items-center gap-3">
-          <button type="submit" class="btn btn-brand">Save Appointment</button>
-          <button type="button" class="btn btn-ghost" @click="newAppt=false">Cancel</button>
-        </div>
-      </form>
+{{-- New Appointment Modal (expanded) --}}
+<div x-show="newAppt" x-transition.opacity class="fixed inset-0 z-50 bg-black/60 p-4"
+     @keydown.escape.window="newAppt=false">
+  <div class="card max-w-4xl mx-auto rounded-xl p-6 border border-slate-700/40">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold">New Appointment</h3>
+      <button class="btn btn-ghost" @click="newAppt=false">Close</button>
     </div>
+
+    <form method="POST" action="{{ route('appointments.store') }}">
+      @csrf
+      <input type="hidden" name="contact_id" value="{{ $contact->id }}">
+
+      {{-- Core --}}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="field md:col-span-2">
+          <label>Scheduled For</label>
+          <input type="datetime-local" name="scheduled_for" class="ring-brand">
+        </div>
+
+        <div class="field">
+          <label>Interested In</label>
+          <input name="interested_in" class="ring-brand">
+        </div>
+
+        <div class="field">
+          <label>Location</label>
+          <input name="location" class="ring-brand">
+        </div>
+
+        <div class="field">
+          <label>Duration (minutes)</label>
+          <input type="number" min="0" name="duration_minutes" class="ring-brand">
+        </div>
+      </div>
+
+      {{-- Who set / who with --}}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        <div class="field">
+          <label>Set By (User ID)</label>
+          <input type="number" name="set_by_user_id" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Set By (Name)</label>
+          <input name="set_by_name" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Set With (User ID)</label>
+          <input type="number" name="set_with_id" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Set With (Name)</label>
+          <input name="set_with_name" class="ring-brand">
+        </div>
+      </div>
+
+      {{-- Status / Result --}}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="field">
+          <label>Result</label>
+          <input name="result" class="ring-brand">
+        </div>
+        <div class="field md:col-span-2">
+          <label>Result Reason</label>
+          <input name="result_reason" class="ring-brand">
+        </div>
+
+        <div class="field">
+          <label>Confirmed At</label>
+          <input type="datetime-local" name="confirmed_at" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Canceled At</label>
+          <input type="datetime-local" name="canceled_at" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Cancellation Reason</label>
+          <input name="cancellation_reason" class="ring-brand">
+        </div>
+
+        <div class="field">
+          <label>Follow Up At</label>
+          <input type="datetime-local" name="follow_up_at" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Window Start</label>
+          <input type="datetime-local" name="window_start" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Window End</label>
+          <input type="datetime-local" name="window_end" class="ring-brand">
+        </div>
+      </div>
+
+      {{-- Sales / Pricing --}}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        <div class="field">
+          <label>Sales Rep (User ID)</label>
+          <input type="number" name="sales_rep_id" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Product</label>
+          <input name="product" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Price Quoted</label>
+          <input type="number" step="0.01" name="price_quoted" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Price Sold</label>
+          <input type="number" step="0.01" name="price_sold" class="ring-brand">
+        </div>
+      </div>
+
+      {{-- Disposition + Notes --}}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div class="field">
+          <label>Disposition</label>
+          <select name="disposition_id" class="ring-brand">
+            <option value="">— optional —</option>
+            @foreach(($dispositions ?? []) as $d)
+              <option value="{{ $d->id }}">{{ $d->name }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div class="field md:col-span-2">
+          <label>Notes</label>
+          <textarea name="notes" rows="4" class="ring-brand"></textarea>
+        </div>
+      </div>
+
+      {{-- Optional extended sales fields (include only if you migrated these) --}}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        <div class="field">
+          <label>Install At</label>
+          <input type="datetime-local" name="install_at" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Measured At</label>
+          <input type="datetime-local" name="measured_at" class="ring-brand">
+        </div>
+
+        <div class="flex items-center gap-2 mt-7">
+          <input type="checkbox" name="result_48hr" value="1">
+          <label class="text-sm">Result 48hr</label>
+        </div>
+        <div class="flex items-center gap-2 mt-7">
+          <input type="checkbox" name="result_onspot" value="1">
+          <label class="text-sm">Result On-Spot</label>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="below_par" value="1">
+          <label class="text-sm">Below PAR</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="got_docs" value="1">
+          <label class="text-sm">Got Docs</label>
+        </div>
+
+        <div class="field">
+          <label>Amount Sold</label>
+          <input type="number" step="0.01" name="amount_sold" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>NET</label>
+          <input type="number" step="0.01" name="net" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Bonus OVR</label>
+          <input type="number" step="0.01" name="bonus_ovr" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Bonus NET</label>
+          <input type="number" step="0.01" name="bonus_net" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>PAR</label>
+          <input type="number" step="0.01" name="par" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>Commission %</label>
+          <input type="number" step="0.01" name="commission_pct" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>LE Win</label>
+          <input type="number" step="0.01" name="le_win" class="ring-brand">
+        </div>
+        <div class="field">
+          <label>TF Win</label>
+          <input type="number" step="0.01" name="tf_win" class="ring-brand">
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center gap-3">
+        <button type="submit" class="btn btn-brand">Save Appointment</button>
+        <button type="button" class="btn btn-ghost" @click="newAppt=false">Cancel</button>
+      </div>
+    </form>
   </div>
+</div>
 
   {{-- Theme Panel --}}
   <div x-cloak x-show="panelOpen" @keydown.escape.window="panelOpen=false"
@@ -542,6 +640,7 @@
       const state = {
         panelOpen:false,
         newAppt:false,
+        noteOpen:false, // <— added
         colors: Object.assign({}, defaultColors, saved),
         font:savedFont,
         setColor(k,v){ this.colors[k]=v; this.save(); },
@@ -558,6 +657,25 @@
       return state;
     }
   </script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const lat = @json($contact->lat);
+    const lng = @json($contact->lng);
+
+    if (!lat || !lng) {
+      const res = await fetch(@json(route('contacts.geocode', $contact)), {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN': @json(csrf_token())}
+      });
+      // Optional: You can refresh the page or update Lat/Lng inputs if needed.
+      // const json = await res.json(); console.log('Geocode', json);
+    }
+  } catch (e) {
+    console.warn('Geocode failed:', e);
+  }
+});
+</script>
 
 </body>
 </html>

@@ -57,12 +57,14 @@
       </div>
     </div>
   @endif
-
-  <form method="POST" action="{{ route('logout') }}" class="ml-auto" style="display:inline">
+<div class="flex items-center gap-3">
+  @include('settings._nav')
+  <button class="btn btn-ghost" @click="$dispatch('open-theme-panel')">Theme</button>
+  <form method="POST" action="{{ route('logout') }}">
     @csrf
-    <button type="submit" style="background:none;border:0;color:#222;cursor:pointer">Logout</button>
+    <button type="submit" class="btn btn-ghost">Logout</button>
   </form>
-</nav>
+</div>
 
 @yield('content')
 </body>

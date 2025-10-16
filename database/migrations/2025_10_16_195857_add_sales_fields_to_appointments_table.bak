@@ -1,0 +1,85 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::table('appointments', function (Blueprint $t) {
+            // who/when
+            $t->foreignId('set_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $t->string('set_with')->nullable();                 // Both | Husband | Wife
+            $t->foreignId('confirmed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $t->string('confirmed_with')->nullable();           // Both | Husband | Wife
+
+            // outcomes
+            $t->string('result')->nullable();                   // Confirmed | Sold | Etc
+            $t->boolean('result_48hr')->default(false);
+            $t->boolean('result_onspot')->default(false);
+            $t->string('result_ran')->nullable();               // e.g. Sale / No Sale
+
+            // sales / product
+            $t->string('product_type')->nullable();             // Roofing, Siding, etc
+            $t->decimal('amount_sold', 12, 2)->nullable();
+            $t->string('reset_by')->nullable();
+            $t->string('issued_to')->nullable();                // user/rep name or id string
+            $t->decimal('net', 12, 2)->nullable();
+            $t->string('finance_result')->nullable();           // Finance | Cash
+            $t->integer('add_banks')->nullable();               // count of banks
+
+            // install / measure
+            $t->dateTime('install_at')->nullable();
+            $t->string('installer')->nullable();                // or installer_id if you have table
+            $t->string('measured_by')->nullable();
+            $t->dateTime('measured_at')->nullable();
+
+            // windows/quantities
+            $t->integer('windows_qty')->nullable();
+            $t->integer('windows_replaced_qty')->nullable();
+
+            // job status (keep as string for now)
+            $t->string('job_status')->nullable();
+
+            // commissions / performance
+            $t->decimal('commission_pct', 5, 2)->nullable();
+            $t->decimal('bonus_ovr', 12, 2)->nullable();
+            $t->boolean('below_par')->default(false);
+            $t->decimal('bonus_net', 12, 2)->nullable();
+            $t->decimal('par', 12, 2)->nullable();
+
+            // measures (numbers)
+            $t->decimal('le_win', 8, 2)->nullable();
+            $t->decimal('tf_win', 8, 2)->nullable();
+            $t->integer('roof_sq')->nullable();
+            $t->integer('mat_sq')->nullable();
+            $t->integer('siding_sq')->nullable();
+            $t->integer('fascia_ft')->nullable();
+            $t->integer('gutter_ft')->nullable();
+
+            // misc
+            $t->string('appointment_source')->nullable();       // "Home Advisor 2024"
+            $t->string('office')->nullable();                   // "Fort Wayne"
+            $t->unsignedSmallInteger('credit_score')->nullable();
+            $t->boolean('got_docs')->default(false);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('appointments', function (Blueprint $t) {
+            $t->dropConstrainedForeignId('set_by_user_id');
+            $t->dropConstrainedForeignId('confirmed_by_user_id');
+            $t->dropColumn([
+                'set_with','confirmed_with','result','result_48hr','result_onspot','result_ran',
+                'product_type','amount_sold','reset_by','issued_to','net','finance_result','add_banks',
+                'install_at','installer','measured_by','measured_at',
+                'windows_qty','windows_replaced_qty','job_status',
+                'commission_pct','bonus_ovr','below_par','bonus_net','par',
+                'le_win','tf_win','roof_sq','mat_sq','siding_sq','fascia_ft','gutter_ft',
+                'appointment_source','office','credit_score','got_docs'
+            ]);
+        });
+    }
+};

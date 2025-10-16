@@ -50,6 +50,33 @@ Route::delete('/contacts/{contact}/notes/{note}', [NoteController::class, 'destr
     Route::get('/current-calls', function () {
         return \App\Models\CurrentCall::with('user', 'contact')->get();
     })->name('current.calls');
+
+
+
+// SETTINGS
+Route::prefix('settings')->name('settings.')->middleware('auth')->group(function () {
+    // Dispositions
+    Route::resource('dispositions', \App\Http\Controllers\Settings\DispositionController::class)->except(['show']);
+
+    // Result Ran list
+    Route::resource('result-rans', \App\Http\Controllers\Settings\ResultRanController::class)->except(['show']);
+
+    // Confirmation Results list
+    Route::resource('results', \App\Http\Controllers\Settings\ConfirmationResultController::class)->except(['show']);
+
+    // APIs / Connections
+    Route::get('apis', [\App\Http\Controllers\Settings\ApiController::class, 'edit'])->name('apis.edit');
+    Route::post('apis', [\App\Http\Controllers\Settings\ApiController::class, 'update'])->name('apis.update');
+});
+
+
+// Geocode a contact (server-side with Google Maps)
+Route::post('/contacts/{contact}/geocode', [\App\Http\Controllers\GeocodeController::class, 'geocode'])
+    ->name('contacts.geocode')
+    ->middleware('auth');
+
+
+
 });
 
 
