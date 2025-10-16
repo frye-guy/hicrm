@@ -18,30 +18,33 @@ class ContactController extends Controller
         return redirect()->route('contacts.index')->with('status','Contact deleted');
     }
 
-    public function show(Contact $contact)
-    {
-        // Pass all lead sources for the dropdown and the contact to the view
-        $leadSources = LeadSource::orderBy('name')->get(['id', 'name']);
-
-        return view('contacts.show', [
-            'contact'      => $contact,
-            'leadSources'  => $leadSources,
-        ]);
-    }
 public function show(\App\Models\Contact $contact)
 {
+    // Eager-load for the notes timeline
     $contact->load([
         'notes.user:id,name',
         'notes.disposition:id,name,slug,is_positive,is_final,row_color',
     ]);
 
-    $dispositions = \App\Models\Disposition::orderBy('name')->get(['id','name','row_color','is_positive','is_final']);
+    // Dispositions for the dropdown
+    $dispositions = \App\Models\Disposition::orderBy('name')
+        ->get(['id','name','row_color','is_positive','is_final']);
 
-    // Optional: settings for UI colors
+    // Settings (for UI colors, etc.)
     $settings = \App\Models\Setting::first();
 
-    return view('contacts.show', compact('contact','dispositions','settings'));
+    // Lead Sources (if your view expects it)
+    // Adjust fields as needed for your project
+    $leadSources = \App\Models\LeadSource::orderBy('name')->get(['id','name']);
+
+    return view('contacts.show', [
+        'contact'      => $contact,
+        'dispositions' => $dispositions,
+        'settings'     => $settings,
+        'leadSources'  => $leadSources,
+    ]);
 }
+
     /**
      * Update the specified contact in storage.
      */
