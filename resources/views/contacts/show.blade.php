@@ -135,25 +135,24 @@
         </div>
 
         <div class="field">
-    <label for="lead_source_id">Source</label>
-    <select
-        id="lead_source_id"
-        name="lead_source_id"
-        class="w-full rounded-md border-0 bg-gray-800/40 text-gray-100 ring-1 ring-inset ring-gray-700 focus:ring-2 focus:ring-blue-500"
-    >
-<option value="">Select</option>
-        @forelse($leadSources as $id => $name)
-            <option value="{{ $id }}"
-                @selected(old('lead_source_id', $contact->lead_source_id) == $id)>
-                {{ $name }}
-            </option>
-        @empty
-            <option value="" disabled>No lead sources configured</option>
-        @endforelse    </select>
-    @error('lead_source_id')
-        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-    @enderror
-</div>
+<label class="block text-sm font-medium">Source</label>
+<select
+    name="lead_source_id"
+    class="form-select w-full"
+>
+    <option value="">Select</option>
+    @foreach($leadSources as $source)
+        <option
+            value="{{ $source->id }}"
+            @selected(old('lead_source_id', $contact->lead_source_id) == $source->id)
+        >
+            {{ $source->name }}
+        </option>
+    @endforeach
+</select>
+@error('lead_source_id')
+    <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+@enderror</div>
 
         <div class="col-span-2 field">
           <label>Record ID</label>
@@ -279,6 +278,111 @@
           </div>
         </div>
       </div>
+
+
+@extends('layouts.app')
+
+@section('content')
+<div class="max-w-6xl mx-auto p-6">
+  {{-- Header --}}
+  <div class="flex items-start justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-semibold">
+        Contact: {{ $contact->first_name }} {{ $contact->last_name }}
+      </h1>
+      <p class="text-sm text-gray-500">
+        {{ $contact->city ?? '' }} {{ $contact->state ? ', '.$contact->state : '' }}
+        @if($contact->phone) • {{ $contact->phone }} @endif
+        @if($contact->email) • {{ $contact->email }} @endif
+      </p>
+    </div>
+    @if($settings && $settings->ui_primary_color)
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-white text-xs font-medium"
+            style="background: {{ $settings->ui_primary_color }};">
+        CRM
+      </span>
+    @endif
+  </div>
+
+  {{-- Add Note --}}
+  <div class="bg-white border rounded-lg p-4 mb-8">
+    <form method="POST" action="{{ route('contacts.notes.store', $contact) }}" class="space-y-4">
+      @csrf
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">Note</label>
+          <textarea name="body" rows="3" class="w-full border rounded p-2" placeholder="Type a note..."></textarea>
+          @error('body') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Disposition</label>
+          <select name="disposition_id" class="w-full border rounded p-2">
+            <option value="">— optional —</option>
+            @foreach($dispositions as $d)
+              <option value="{{ $d->id }}">{{ $d->name }}</option>
+            @endforeach
+          </select>
+          @error('disposition_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+
+          <label class="block text-sm font-medium mt-4 mb-1">Follow-up</label>
+          <input type="datetime-local" name="follow_up_at" class="w-full border rounded p-2" />
+          @error('follow_up_at') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+
+          <button type="submit"
+                  class="mt-4 px-4 py-2 rounded text-white"
+                  style="background: {{ $settings->ui_secondary_color ?? '#111827' }}">
+            Add Note
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {{-- Notes Timeline --}}
+  <div>
+    <h2 class="text-lg font-semibold mb-3">Notes & Activity</h2>
+    <div class="space-y-3">
+      @forelse($contact->notes as $note)
+        <div class="bg-white border rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              @if($note->disposition)
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-white"
+                      style="background: {{ $note->disposition->row_color ?? '#6B7280' }}">
+                  {{ $note->disposition->name }}
+                </span>
+              @endif
+              @if($note->follow_up_at)
+                <span class="text-xs text-amber-700 font-medium">
+                  Follow-up: {{ $note->follow_up_at->format('M j, Y g:ia') }}
+                </span>
+              @endif
+            </div>
+            <div class="text-xs text-gray-500">
+              by {{ $note->user->name ?? 'System' }} • {{ $note->created_at->diffForHumans() }}
+            </div>
+          </div>
+
+          @if($note->body)
+            <p class="mt-2 text-sm whitespace-pre-line">{{ $note->body }}</p>
+          @endif
+
+          <form method="POST" action="{{ route('contacts.notes.destroy', [$contact, $note]) }}"
+                onsubmit="return confirm('Delete this note?')" class="mt-2">
+            @csrf @method('DELETE')
+            <button class="text-xs text-red-600 hover:underline">Delete</button>
+          </form>
+        </div>
+      @empty
+        <p class="text-sm text-gray-500">No notes yet.</p>
+      @endforelse
+    </div>
+  </div>
+</div>
+@endsection
+
+
 
       <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-brand">Save</button>

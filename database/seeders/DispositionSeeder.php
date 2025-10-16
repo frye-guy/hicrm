@@ -10,21 +10,20 @@ class DispositionSeeder extends Seeder
 {
     public function run(): void
     {
-        $sets = [
-            'call' => ['NO_ANSWER','BUSY','CALLBACK','LEFT_VOICEMAIL','DO_NOT_CALL','CONNECTED','HUNG_UP'],
-            'appointment' => ['BOOKED','CONFIRMED','RESCHEDULED','NO_SHOW','COMPLETED'],
-            'sale' => ['SOLD','UNSOLD'],
-            'finance' => ['APPROVED','PENDING','DECLINED'],
-            'job' => ['SCHEDULED','IN_PROGRESS','INSTALLED','CANCELED'],
-        ];
+    $rows = [
+        ['name'=>'Lead Set','slug'=>'lead-set','is_positive'=>true,'is_final'=>false,'row_color'=>'#2563eb'],
+        ['name'=>'Confirmed','slug'=>'confirmed','is_positive'=>true,'is_final'=>false,'row_color'=>'#16a34a'],
+        ['name'=>'Sold','slug'=>'sold','is_positive'=>true,'is_final'=>true,'row_color'=>'#0ea5e9'],
+        ['name'=>'Not Home','slug'=>'not-home','is_positive'=>false,'is_final'=>false,'row_color'=>'#9ca3af'],
+        ['name'=>'Not Interested','slug'=>'not-interested','is_positive'=>false,'is_final'=>true,'row_color'=>'#ef4444'],
+    ];
 
-        foreach ($sets as $type => $codes) {
-            foreach ($codes as $code) {
-                Disposition::firstOrCreate(
-                    ['type' => $type, 'code' => $code],
-                    ['label' => Str::of($code)->lower()->replace('_',' ')->title()]
-                );
-            }
-        }
+    foreach ($rows as $r) {
+        \App\Models\Disposition::firstOrCreate(['slug'=>$r['slug']], $r);
     }
+
+    }
+
+
 }
+

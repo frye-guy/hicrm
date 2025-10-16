@@ -28,112 +28,72 @@ class ContactController extends Controller
             'leadSources'  => $leadSources,
         ]);
     }
+public function show(\App\Models\Contact $contact)
+{
+    $contact->load([
+        'notes.user:id,name',
+        'notes.disposition:id,name,slug,is_positive,is_final,row_color',
+    ]);
 
+    $dispositions = \App\Models\Disposition::orderBy('name')->get(['id','name','row_color','is_positive','is_final']);
+
+    // Optional: settings for UI colors
+    $settings = \App\Models\Setting::first();
+
+    return view('contacts.show', compact('contact','dispositions','settings'));
+}
     /**
      * Update the specified contact in storage.
      */
-    public function update(Request $request, Contact $contact)
-    {
-        // Validate everything you have on the form
-        $validated = $request->validate([
-            'phone'          => ['nullable', 'string', 'max:25'],
-            'dispo'          => ['nullable', 'string', 'max:191'], // view uses "Dispo"
-            'lead_source_id' => ['nullable', 'integer', 'exists:lead_sources,id'],
-            'first_name'     => ['nullable', 'string', 'max:191'],
-            'spouse'         => ['nullable', 'string', 'max:191'], // maps to spouse_name
-            'last_name'      => ['nullable', 'string', 'max:191'],
-            'email'          => [
-                'nullable', 'email', 'max:255',
-                Rule::unique('contacts', 'email')->ignore($contact->id)
-            ],
-            'address'        => ['nullable', 'string', 'max:255'],
-            'city'           => ['nullable', 'string', 'max:191'],
-            'state'          => ['nullable', 'string', 'max:2'],
-            'zip'            => ['nullable', 'string', 'max:10'],
+public function update(Request $request, Contact $contact)
+{
+    // validate every field that is editable on the Contact Show form
+    $data = $request->validate([
+        'phone'          => ['required', 'string', 'max:25'],
+        'dispo'          => ['nullable', 'string', 'max:255'],             // or 'disposition' if that's your column
+        'lead_source_id' => ['nullable', 'integer', 'exists:lead_sources,id'],
 
-            'mr_works'       => ['nullable', 'string', 'max:191'],
-            'mrs_works'      => ['nullable', 'string', 'max:191'],
-            'alt_phone'      => ['nullable', 'string', 'max:25'],
-            'alt_phone2'     => ['nullable', 'string', 'max:25'],
-            'alt_phone3'     => ['nullable', 'string', 'max:25'],
+        'first_name'     => ['nullable', 'string', 'max:255'],
+        'spouse'         => ['nullable', 'string', 'max:255'],             // or 'spouse_name' if that’s your column
+        'last_name'      => ['nullable', 'string', 'max:255'],
+        'email'          => ['nullable', 'email', 'max:255'],
 
-            // UI label is "Search Tool" (singular); DB column is search_tools (plural)
-            'search_tool'    => ['nullable', 'string', 'max:191'],
+        'address'        => ['nullable', 'string', 'max:255'],
+        'city'           => ['nullable', 'string', 'max:255'],
+        'state'          => ['nullable', 'string', 'max:2'],
+        'zip'            => ['nullable', 'string', 'max:10'],
 
-            'age_of_home'    => ['nullable', 'string', 'max:50'],
-            // UI says "Type of Home"; some DBs use type_of_home or home_type
-            'home_type'      => ['nullable', 'string', 'max:191'],
-            'color_of_home'  => ['nullable', 'string', 'max:191'],
-            'years_owned'    => ['nullable', 'string', 'max:50'],
+        'mr_works'       => ['nullable', 'string', 'max:255'],
+        'mrs_works'      => ['nullable', 'string', 'max:255'],
 
-            // UI shows Lat / Long; DB uses latitude / longitude
-            'lat'            => ['nullable', 'numeric'],
-            'lng'            => ['nullable', 'numeric'],
-            'zone'           => ['nullable', 'string', 'max:50'],
+        'alt_phone'      => ['nullable', 'string', 'max:25'],
+        'alt_phone2'     => ['nullable', 'string', 'max:25'],
+        'alt_phone3'     => ['nullable', 'string', 'max:25'],
 
-            // UI shows Record ID; most schemas call this external_id
-            'record_id'      => ['nullable', 'string', 'max:191'],
+        'search_tool'    => ['nullable', 'string', 'max:255'],             // matches “Search Tool” select
+        'age_of_home'    => ['nullable', 'string', 'max:255'],
+        'home_type'      => ['nullable', 'string', 'max:255'],             // “Type of Home”
+        'color_of_home'  => ['nullable', 'string', 'max:255'],
+        'years_owned'    => ['nullable', 'string', 'max:255'],
 
-            // checkbox; normalize below
-            'needs_reset'    => ['sometimes', 'boolean'],
-        ]);
+        'lat'            => ['nullable', 'numeric'],
+        'lng'            => ['nullable', 'numeric'],
+        'zone'           => ['nullable', 'string', 'max:255'],
 
-        /**
-         * Map incoming request keys (as used in the Blade form) to the actual
-         * Contact model/database column names.
-         */
-        $map = [
-            'phone'          => 'phone',
-            'dispo'          => 'disposition',
-            'lead_source_id' => 'lead_source_id',
-            'first_name'     => 'first_name',
-            'spouse'         => 'spouse_name',
-            'last_name'      => 'last_name',
-            'email'          => 'email',
-            'address'        => 'address',
-            'city'           => 'city',
-            'state'          => 'state',
-            'zip'            => 'zip',
+        // checkbox for Needs Reset — if column name is needs_reset (TINYINT/BOOL)
+        'needs_reset'    => ['nullable', 'boolean'],
+    ]);
 
-            'mr_works'       => 'mr_works',
-            'mrs_works'      => 'mrs_works',
-            'alt_phone'      => 'alt_phone',
-            'alt_phone2'     => 'alt_phone2',
-            'alt_phone3'     => 'alt_phone3',
+    // Handle boolean checkbox explicitly (unchecked boxes are not posted)
+    $data['needs_reset'] = $request->boolean('needs_reset');
 
-            'search_tool'    => 'search_tools',
+    // Save once
+    $contact->fill($data);
+    $contact->save();
 
-            'age_of_home'    => 'age_of_home',
-            'home_type'      => 'type_of_home',
-            'color_of_home'  => 'color_of_home',
-            'years_owned'    => 'years_owned',
-
-            'lat'            => 'latitude',
-            'lng'            => 'longitude',
-            'zone'           => 'zone',
-
-            'record_id'      => 'external_id',
-            // needs_reset handled below so unchecked => false is saved properly
-        ];
-
-        // Build the array we actually fill() with (using the mapping above)
-        $toSave = [];
-        foreach ($map as $inputKey => $column) {
-            if (array_key_exists($inputKey, $validated)) {
-                $toSave[$column] = $validated[$inputKey];
-            }
-        }
-
-        // Normalize the checkbox; if it’s missing in the request, it's unchecked (false).
-        $toSave['needs_reset'] = $request->boolean('needs_reset');
-
-        // Fill and save
-        $contact->fill($toSave);
-        $contact->save();
-
-        return redirect()
-            ->route('contacts.show', $contact)
-            ->with('status', 'Contact updated');
-    }
+    return redirect()
+        ->route('contacts.show', $contact)
+        ->with('status', 'Contact updated');
+}
 }
 

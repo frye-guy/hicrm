@@ -2,18 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LeadSource extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'name',
-        'type',
+        'short_code',
         'description',
-        'active',
+        'type',
     ];
 
     public function contacts()

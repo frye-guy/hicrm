@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\LeadSourceTypeController;
 use App\Http\Controllers\Admin\LeadSourceController;
+use App\Http\Controllers\NoteController;
 
 // Redirect home ? dashboard
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -25,6 +26,9 @@ Route::middleware(['auth', 'update.last.activity'])->group(function () {
     // Contacts
     Route::resource('contacts', ContactController::class);
     Route::resource('appointments', AppointmentController::class)->only(['edit','update','destroy']);
+// Nested for notes on a contact
+Route::post('/contacts/{contact}/notes', [NoteController::class, 'store'])->name('contacts.notes.store');
+Route::delete('/contacts/{contact}/notes/{note}', [NoteController::class, 'destroy'])->name('contacts.notes.destroy');
 
     // Queues
     Route::resource('queues', QueueController::class);
