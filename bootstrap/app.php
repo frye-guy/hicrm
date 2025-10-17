@@ -1,7 +1,8 @@
 <?php
 
-use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -10,11 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // other aliases you may already have...
-$middleware->alias([
-  'update.last.activity' => \App\Http\Middleware\UpdateLastActivity::class,
-  'role' => \App\Http\Middleware\EnsureUserHasRole::class,
-]);
+        // Your aliases
+        $middleware->alias([
+            'update.last.activity' => \App\Http\Middleware\UpdateLastActivity::class,
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+        ]);
     })
-    ->withExceptions()
+    ->withExceptions(function (Exceptions $exceptions) {
+        // You can configure reportable/renderable here if desired.
+    })
     ->create();

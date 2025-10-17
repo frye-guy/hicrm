@@ -37,12 +37,17 @@ public function show(\App\Models\Contact $contact)
     // Adjust fields as needed for your project
     $leadSources = \App\Models\LeadSource::orderBy('name')->get(['id','name']);
 
-    return view('contacts.show', [
-        'contact'      => $contact,
-        'dispositions' => $dispositions,
-        'settings'     => $settings,
-        'leadSources'  => $leadSources,
-    ]);
+return view('contacts.show', [
+    'contact'      => $contact,
+    'appointments' => $appointments ?? [],
+    'leadSources'  => $leadSources ?? [],
+    'dispositions' => $dispositions ?? [],
+    'marketingUsers' => $marketingUsers ?? [],
+    'salesUsers'     => $salesUsers ?? [],
+    'resultReasons'  => $resultReasons ?? [],
+    'confirmResults' => $confirmResults ?? [],
+    'settings'       => $settings ?? null,
+]);
 }
 
     /**

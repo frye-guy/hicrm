@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Marketing\QueueController;
 use App\Http\Controllers\Marketing\CallController;
@@ -105,6 +105,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
     // Sanity route to test RBAC
     Route::get('/admin/ping', fn () => 'ADMIN OK')->name('admin.ping');
+ Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    // Route::resource('users', UserController::class); // if you want full CRUD
 });
 
 // ====================
