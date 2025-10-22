@@ -84,6 +84,16 @@ Route::middleware(['web','auth','update.last.activity'])->group(function () {
     // Add store (and keep edit/update/destroy if you already added them)
     Route::resource('appointments', AppointmentController::class)
          ->only(['store','edit','update','destroy']);
+    Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])
+        ->name('users.index');
+    Route::resource('dispositions', \App\Http\Controllers\Settings\DispositionController::class)->only(['index','create','store','edit','update','destroy']);
+
+    Route::resource('result-rans', \App\Http\Controllers\Settings\ResultRanController::class)->only(['index','create','store','edit','update','destroy']);
+
+    Route::resource('results', \App\Http\Controllers\Settings\ConfirmResultController::class)->only(['index','create','store','edit','update','destroy']);
+
+    Route::get('apis', [\App\Http\Controllers\Settings\ApiController::class,'edit'])->name('apis.edit');
+    Route::put('apis', [\App\Http\Controllers\Settings\ApiController::class,'update'])->name('apis.update');
 });
 
 

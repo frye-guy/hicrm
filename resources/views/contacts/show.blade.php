@@ -291,111 +291,101 @@
     </div>
   </section>
 
-  {{-- New Appointment Modal (trimmed to your latest spec) --}}
-  <div x-show="newAppt" x-transition.opacity class="fixed inset-0 z-50 bg-black/60 p-4"
-       @keydown.escape.window="newAppt=false">
-    <div class="card max-w-4xl mx-auto rounded-xl p-6 border border-slate-700/40 bg-[#0f172a]">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">New Appointment</h3>
-        <button class="btn btn-ghost" @click="newAppt=false">Close</button>
+  {{-- New Appointment Modal --}}
+<div x-show="newAppt" x-transition.opacity class="fixed inset-0 z-50 bg-black/60 p-4"
+     @keydown.escape.window="newAppt=false">
+  <div class="card max-w-4xl mx-auto rounded-xl p-6 border border-slate-700/40">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold">New Appointment</h3>
+      <button class="btn btn-ghost" @click="newAppt=false">Close</button>
+    </div>
+
+    <form method="POST" action="{{ route('appointments.store') }}">
+      @csrf
+      <input type="hidden" name="contact_id" value="{{ $contact->id }}">
+
+      {{-- Core --}}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="field md:col-span-2">
+          <label>Scheduled For</label>
+          <input type="datetime-local" name="scheduled_for" class="ring-brand w-full">
+        </div>
+        <div class="field">
+          <label>Interested In</label>
+          <input name="interested_in" class="ring-brand w-full">
+        </div>
+        <div class="field">
+          <label>Confirmed At</label>
+          <input type="datetime-local" name="confirmed_at" class="ring-brand w-full">
+        </div>
       </div>
 
-      <form method="POST" action="{{ route('appointments.store') }}">
-        @csrf
-        <input type="hidden" name="contact_id" value="{{ $contact->id }}">
-
-        {{-- Core --}}
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="field md:col-span-2">
-            <label>Scheduled For</label>
-            <input type="datetime-local" name="scheduled_for" class="ring-brand w-full">
-          </div>
-
-          <div class="field">
-            <label>Interested In</label>
-            <input name="interested_in" class="ring-brand w-full">
-          </div>
-
-          {{-- Confirmed At (kept; remove if you do not want it) --}}
-          <div class="field">
-            <label>Confirmed At</label>
-            <input type="datetime-local" name="confirmed_at" class="ring-brand w-full">
-          </div>
+      {{-- Who set / sales rep --}}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        <div class="field md:col-span-2">
+          <label>Set By (Marketing)</label>
+          <select name="set_by_user_id" class="ring-brand w-full">
+            <option value="">— Select —</option>
+            @foreach($marketingUsers as $u)
+              <option value="{{ $u->id }}">{{ $u->name }}</option>
+            @endforeach
+          </select>
         </div>
-
-        {{-- Who set / Sales rep --}}
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-          <div class="field md:col-span-2">
-            <label>Set By (Marketing)</label>
-            <select name="set_by_user_id" class="ring-brand w-full">
-              <option value="">— Select —</option>
-              @foreach(($marketingUsers ?? []) as $u)
-                <option value="{{ $u->id }}">{{ $u->name }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div class="field md:col-span-2">
-            <label>Sales Rep (Sales)</label>
-            <select name="sales_rep_id" class="ring-brand w-full">
-              <option value="">— Select —</option>
-              @foreach(($salesUsers ?? []) as $u)
-                <option value="{{ $u->id }}">{{ $u->name }}</option>
-              @endforeach
-            </select>
-          </div>
+        <div class="field md:col-span-2">
+          <label>Sales Rep (Sales)</label>
+          <select name="sales_rep_id" class="ring-brand w-full">
+            <option value="">— Select —</option>
+            @foreach($salesUsers as $u)
+              <option value="{{ $u->id }}">{{ $u->name }}</option>
+            @endforeach
+          </select>
         </div>
+      </div>
 
-        {{-- Results --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div class="field">
-            <label>Result (Ran)</label>
-            <select name="result_reason_id" class="ring-brand w-full">
-              <option value="">— Select —</option>
-              @foreach(($resultReasons ?? []) as $r)
-                <option value="{{ $r->id }}">{{ $r->name }}</option>
-              @endforeach
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Confirmation Result</label>
-            <select name="confirm_result_id" class="ring-brand w-full">
-              <option value="">— Select —</option>
-              @foreach(($confirmResults ?? []) as $r)
-                <option value="{{ $r->id }}">{{ $r->name }}</option>
-              @endforeach
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Price Quoted</label>
-            <input type="number" step="0.01" name="price_quoted" class="ring-brand w-full">
-          </div>
+      {{-- Results --}}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="field">
+          <label>Result (Ran)</label>
+          <select name="result_reason_id" class="ring-brand w-full">
+            <option value="">— Select —</option>
+            @foreach($resultRans as $r)
+              <option value="{{ $r->id }}">{{ $r->name }}</option>
+            @endforeach
+          </select>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div class="field">
-            <label>Price Sold</label>
-            <input type="number" step="0.01" name="price_sold" class="ring-brand w-full">
-          </div>
-          <div class="field md:col-span-2">
-            <label>Notes</label>
-            <textarea name="notes" rows="4" class="ring-brand w-full"></textarea>
-          </div>
+        <div class="field">
+          <label>Confirmation Result</label>
+          <select name="confirm_result_id" class="ring-brand w-full">
+            <option value="">— Select —</option>
+            @foreach($confirmResults as $r)
+              <option value="{{ $r->id }}">{{ $r->name }}</option>
+            @endforeach
+          </select>
         </div>
-
-        <div class="mt-6 flex items-center gap-3">
-          <button type="submit" class="btn btn-brand">Save Appointment</button>
-          <button type="button" class="btn btn-ghost" @click="newAppt=false">Cancel</button>
+        <div class="field">
+          <label>Price Quoted</label>
+          <input type="number" step="0.01" name="price_quoted" class="ring-brand w-full">
         </div>
-      </form>
-    </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="field">
+          <label>Price Sold</label>
+          <input type="number" step="0.01" name="price_sold" class="ring-brand w-full">
+        </div>
+        <div class="field md:col-span-2">
+          <label>Notes</label>
+          <textarea name="notes" rows="4" class="ring-brand w-full"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center gap-3">
+        <button type="submit" class="btn btn-brand">Save Appointment</button>
+        <button type="button" class="btn btn-ghost" @click="newAppt=false">Cancel</button>
+      </div>
+    </form>
   </div>
-
-  {{-- (Optional) simple Note/Dispo modal - if you keep it here, wire it to your notes route --}}
-  {{-- <div x-show="noteOpen" ...>Your note/dispo form…</div> --}}
 </div>
-
 {{-- Auto-geocode when lat/lng missing --}}
 <script>
 document.addEventListener('DOMContentLoaded', async () => {

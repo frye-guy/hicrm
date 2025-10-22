@@ -10,29 +10,46 @@ class AppointmentController extends Controller
 {
 public function edit(Appointment $appointment)
 {
-    $dispositions   = \App\Models\ResultRan::orderBy('name')->get(['id','name']);
-    $results        = \App\Models\ConfirmationResult::orderBy('name')->get(['id','name']);
-    $marketingUsers = \App\Models\User::whereHas('role', fn($q)=>$q->where('name','marketing'))->orderBy('name')->get(['id','name']);
-    $salesUsers     = \App\Models\User::whereHas('role', fn($q)=>$q->where('name','sales'))->orderBy('name')->get(['id','name']);
+    $marketingUsers = \App\Models\User::role('marketing')->select('id','name')->orderBy('name')->get();
+    $salesUsers     = \App\Models\User::role('sales')->select('id','name')->orderBy('name')->get();
+    $resultRans     = \App\Models\ResultRan::select('id','name')->orderBy('name')->get();
+    $confirmResults = \App\Models\ConfirmResult::select('id','name')->orderBy('name')->get();
+    $dispositions   = \App\Models\Disposition::select('id','name')->orderBy('name')->get();
 
     return view('appointments.edit', [
-        'appointment'   => $appointment,
-        'resultRans'    => $dispositions,
-        'results'       => $results,
-        'marketingUsers'=> $marketingUsers,
-        'salesUsers'    => $salesUsers,
-        'title'         => 'Edit Appointment',
+        'appointment'    => $appointment,
+        'marketingUsers' => $marketingUsers,
+        'salesUsers'     => $salesUsers,
+        'resultRans'     => $resultRans,
+        'confirmResults' => $confirmResults,
+        'dispositions'   => $dispositions,
+        'title'          => 'Edit Appointment',
     ]);
 }
     public function update(Request $request, Appointment $appointment)
     {
-        $data = $this->validatedData($request);
+    $data = $request->validate([
+        'scheduled_for'     => ['nullable','date'],
+        'interested_in'     => ['nullable','string','max:120'],
+        'confirmed_at'      => ['nullable','date'],
 
-        $appointment->update($data);
+        'set_by_user_id'    => ['nullable','exists:users,id'],
+        'sales_rep_id'      => ['nullable','exists:users,id'],
 
-        return redirect()
-            ->route('contacts.show', $appointment->contact_id)
-            ->with('status', 'Appointment updated.');
+        'result_reason_id'  => ['nullable','exists:result_rans,id'],
+        'confirm_result_id' => ['nullable','exists:confirm_results,id'],
+
+        'price_quoted'      => ['nullable','numeric'],
+        'price_sold'        => ['nullable','numeric'],
+
+        'notes'             => ['nullable','string'],
+    ]);
+
+    $appointment->update($data);
+
+    return redirect()
+        ->route('contacts.show', $appointment->contact_id)
+        ->with('status', 'Appointment updated.');
     }
 
     public function destroy(Appointment $appointment)
@@ -47,9 +64,25 @@ public function edit(Appointment $appointment)
 
 public function store(Request $request)
 {
-    $data = $this->validatedData($request);
+    $data = $request->validate([
+        'contact_id'        => ['required','exists:contacts,id'],
+        'scheduled_for'     => ['nullable','date'],
+        'interested_in'     => ['nullable','string','max:120'],
+        'confirmed_at'      => ['nullable','date'],
 
-    $appointment = Appointment::create($data);
+        'set_by_user_id'    => ['nullable','exists:users,id'],
+        'sales_rep_id'      => ['nullable','exists:users,id'],
+
+        'result_reason_id'  => ['nullable','exists:result_rans,id'],     // “Result (Ran)”
+        'confirm_result_id' => ['nullable','exists:confirm_results,id'], // Confirmation result
+
+        'price_quoted'      => ['nullable','numeric'],
+        'price_sold'        => ['nullable','numeric'],
+
+        'notes'             => ['nullable','string'],
+    ]);
+
+    $appointment = \App\Models\Appointment::create($data);
 
     return redirect()
         ->route('contacts.show', $data['contact_id'])

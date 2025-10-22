@@ -20,34 +20,44 @@ class ContactController extends Controller
 
 public function show(\App\Models\Contact $contact)
 {
-    // Eager-load for the notes timeline
-    $contact->load([
-        'notes.user:id,name',
-        'notes.disposition:id,name,slug,is_positive,is_final,row_color',
-    ]);
+    // appointments for the table under the contact form
+    $appointments = \App\Models\Appointment::where('contact_id', $contact->id)
+        ->latest('scheduled_for')->get();
 
-    // Dispositions for the dropdown
-    $dispositions = \App\Models\Disposition::orderBy('name')
-        ->get(['id','name','row_color','is_positive','is_final']);
+    // lead sources for the contact form dropdown
+    $leadSources = \App\Models\LeadSource::select('id','name')->orderBy('name')->get();
 
-    // Settings (for UI colors, etc.)
+    // settings for theme colors (if you use this)
     $settings = \App\Models\Setting::first();
 
-    // Lead Sources (if your view expects it)
-    // Adjust fields as needed for your project
-    $leadSources = \App\Models\LeadSource::orderBy('name')->get(['id','name']);
+    // NEW: users by role for the appointment modal
+    // If you use spatie/laravel-permission:
+    $marketingUsers = \App\Models\User::role('marketing')
+        ->select('id','name')->orderBy('name')->get();
+    $salesUsers = \App\Models\User::role('sales')
+        ->select('id','name')->orderBy('name')->get();
 
-return view('contacts.show', [
-    'contact'      => $contact,
-    'appointments' => $appointments ?? [],
-    'leadSources'  => $leadSources ?? [],
-    'dispositions' => $dispositions ?? [],
-    'marketingUsers' => $marketingUsers ?? [],
-    'salesUsers'     => $salesUsers ?? [],
-    'resultReasons'  => $resultReasons ?? [],
-    'confirmResults' => $confirmResults ?? [],
-    'settings'       => $settings ?? null,
-]);
+    // If you don't use spatie, replace the two calls above with:
+    // $marketingUsers = \App\Models\User::where('role', 'marketing')->select('id','name')->orderBy('name')->get();
+    // $salesUsers     = \App\Models\User::where('role', 'sales')->select('id','name')->orderBy('name')->get();
+
+    // NEW: options managed in Settings
+    $resultRans      = \App\Models\ResultRan::select('id','name')->orderBy('name')->get();         // “Result (Ran)”
+    $confirmResults  = \App\Models\ConfirmResult::select('id','name')->orderBy('name')->get();     // “Confirmation Result”
+    $dispositions    = \App\Models\Disposition::select('id','name','row_color','is_positive','is_final')
+        ->orderBy('name')->get();
+
+    return view('contacts.show', compact(
+        'contact',
+        'appointments',
+        'leadSources',
+        'marketingUsers',
+        'salesUsers',
+        'resultRans',
+        'confirmResults',
+        'dispositions',
+        'settings'
+    ));
 }
 
     /**
